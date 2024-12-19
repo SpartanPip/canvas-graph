@@ -1,7 +1,9 @@
-export const calculateNodePositions = (nodes, edges, expandedWidth, expandedHeight, iterations = 500) => {
-  const kRepulsion = 10000; // Repulsion constant
-  const kSpring = 0.1; // Spring constant
-  const linkLength = 100; // Desired length between connected nodes
+import CanvasGraph from "../components/CanvasGraph";
+
+export const calculateNodePositions = (nodes, edges, expandedWidth, expandedHeight, iterations = 500, nodeSize) => {
+  const kRepulsion = 2000; // Repulsion constant
+  const kSpring = 0.03; // Spring constant
+  const linkLength = nodeSize*8; // Desired length between connected nodes
 
   // Initialize node positions randomly within expanded bounds
   nodes.forEach((node) => {
@@ -21,7 +23,7 @@ export const calculateNodePositions = (nodes, edges, expandedWidth, expandedHeig
 
         const dx = nodeA.x - nodeB.x;
         const dy = nodeA.y - nodeB.y;
-        const distance = Math.sqrt(dx * dx + dy * dy) || 0.01; // Avoid division by zero
+        const distance = Math.sqrt(dx * dx + dy * dy) || 0.01 - 2 * nodeSize; // Avoid division by zero
 
         // Adjusted repulsive force formula
         const repulsiveForce = kRepulsion / Math.pow(Math.max(distance, 10), 2);

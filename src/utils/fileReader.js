@@ -77,5 +77,6 @@ export const traverseFileTree = async (entry, setGraph) => {
     await traverse(entry);
 
     // Update the graph state once after processing
+    console.log("setting graph")
     setGraph({ nodes: tempNodes, edges: tempEdges });
 };
