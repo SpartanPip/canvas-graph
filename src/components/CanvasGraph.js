@@ -28,14 +28,6 @@ const CanvasGraph = ({ nodes = [], edges = [], viewport, setViewport, expandedWi
         // Clear the canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
-
-        // if (positionedNodesRef.current.length > 0) {
-        //     // Log the adjusted position of the first node
-        //     const firstNode = positionedNodesRef.current[0];
-        //     const adjustedX = firstNode.x - viewportRef.current.x;
-        //     const adjustedY = firstNode.y - viewportRef.current.y;
-        //     console.log("First node adjusted position:", { adjustedX, adjustedY, viewportRef.current });
-        // }
     
         // --- Draw edges ---
         edgesRef.current.forEach((edge) => {
