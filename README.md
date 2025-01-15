@@ -2,7 +2,7 @@ webkitGetAsEntry is used to read files in the uploaded directory. This is suppor
 
 ## Available Scripts
 
-In the project directory, you can run:
+In the canvas-graph directory, you can run:
 
 ### `npm start`
 

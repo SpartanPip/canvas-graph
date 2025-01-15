@@ -1,19 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import DirectoryDrop from "./components/DirectoryDrop";
 import CanvasGraph from "./components/CanvasGraph";
 
 const App = () => {
     const [graph, setGraph] = useState({ nodes: [], edges: [] });
-    const [viewport, setViewport] = useState({
-        x: 0,
-        y: 0,
-        width: window.innerWidth,
-        height: window.innerHeight,
+    const [viewport, setViewport] = useState(() => {
+        const initialViewport = {
+            x: 0,
+            y: 0,
+            width: window.innerWidth,
+            height: window.innerHeight,
+        };
+        console.log("Initial viewport:", initialViewport); // Log the initial state
+        return initialViewport;
     });
+    
+    const updateViewport = useCallback((newViewport) => {
+        setViewport(newViewport);
+        console.log("setViewport to:", newViewport);
+    }, []);
 
     // Define expanded area dimensions
-    const expandedWidth = viewport.width;
-    const expandedHeight = viewport.height;
+    const expandedWidth = viewport.width * 2;
+    const expandedHeight = viewport.height * 2;
+
+    useEffect(() => {
+        console.log("Viewport updated:", viewport);
+    }, [viewport]);    
 
     return (
       <div style={{ position: "relative", width: "100%", height: "100vh", color: "gray", margin: 0, padding: 0 }}>
@@ -43,7 +56,7 @@ const App = () => {
               nodes={graph.nodes}
               edges={graph.edges}
               viewport={viewport}
-              setViewport={setViewport}
+              setViewport={updateViewport}
               expandedWidth={expandedWidth}
               expandedHeight={expandedHeight}
           />

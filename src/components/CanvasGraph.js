@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { memo, useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { calculateNodePositions } from "../utils/calculateNodePositions";
 import NodeInteractionManager from "../utils/nodeInteractionManager"; // Import NodeInteractionManager
 
@@ -13,144 +13,146 @@ const CanvasGraph = ({ nodes = [], edges = [], viewport, setViewport, expandedWi
 
     const cursorPosition = useRef({ x: 0, y: 0 }); // Store the current cursor position
 
+    // Use a ref to store the current viewport value
+    const viewportRef = useRef(viewport);
+
+    // Update the ref every time viewport changes
+    useEffect(() => {
+        viewportRef.current = viewport;
+    }, [viewport]);
+
     const draw = () => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext("2d");
-
+    
+        // Clear the canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
-        ctx.translate(-viewport.x, -viewport.y);
+
+        // if (positionedNodesRef.current.length > 0) {
+        //     // Log the adjusted position of the first node
+        //     const firstNode = positionedNodesRef.current[0];
+        //     const adjustedX = firstNode.x - viewportRef.current.x;
+        //     const adjustedY = firstNode.y - viewportRef.current.y;
+        //     console.log("First node adjusted position:", { adjustedX, adjustedY, viewportRef.current });
+        // }
     
-        // Draw edges
+        // --- Draw edges ---
         edgesRef.current.forEach((edge) => {
             const fromNode = positionedNodesRef.current.find((node) => node.id === edge.from);
             const toNode = positionedNodesRef.current.find((node) => node.id === edge.to);
+    
             if (fromNode && toNode) {
+                // Adjust node positions relative to the viewportRef.current
+                const fromX = fromNode.x - viewportRef.current.x;
+                const fromY = fromNode.y - viewportRef.current.y;
+                const toX = toNode.x - viewportRef.current.x;
+                const toY = toNode.y - viewportRef.current.y;
+    
+                // Draw the edge
                 ctx.beginPath();
-                ctx.moveTo(fromNode.x, fromNode.y);
-                ctx.lineTo(toNode.x, toNode.y);
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
                 ctx.lineWidth = 2;
                 ctx.strokeStyle = "#2c3e50";
                 ctx.stroke();
             }
-            
         });
-
-        // Draw default nodes and labels
-        // Draw all nodes first
+    
+        // --- Draw nodes ---
         positionedNodesRef.current.forEach((node) => {
-          if (
-              node.x >= viewport.x &&
-              node.x <= viewport.x + viewport.width &&
-              node.y >= viewport.y &&
-              node.y <= viewport.y + viewport.height &&
-              !interactionManager.activeNodes.includes(node) &&
-              !interactionManager.adjacentNodes.includes(node)
-          ) {
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
-              ctx.fillStyle = "#3498db";
-              ctx.fill();
-              ctx.strokeStyle = "#2c3e50";
-              ctx.lineWidth = 2;
-              ctx.stroke();
-          }
-        });
-
-        // Draw all labels after the nodes
-        positionedNodesRef.current.forEach((node) => {
-          if (
-              node.x >= viewport.x &&
-              node.x <= viewport.x + viewport.width &&
-              node.y >= viewport.y &&
-              node.y <= viewport.y + viewport.height &&
-              !interactionManager.activeNodes.includes(node) &&
-              !interactionManager.adjacentNodes.includes(node)
-          ) {
-              ctx.fillStyle = "#fff";
-              ctx.font = "12px Arial";
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              ctx.fillText(node.label || node.id, node.x, node.y - nodeSize - 5);
-          }
-        });
-
-
-        // Draw adjacent nodes and labels
-        interactionManager.adjacentNodes.forEach((node) => {
+            // Adjust node position relative to the viewportRef.current
+            const adjustedX = node.x - viewportRef.current.x;
+            const adjustedY = node.y - viewportRef.current.y;
+    
+            // Only draw nodes that are within the viewportRef.current
             if (
-                node.x >= viewport.x &&
-                node.x <= viewport.x + viewport.width &&
-                node.y >= viewport.y &&
-                node.y <= viewport.y + viewport.height &&
-                interactionManager.adjacentNodes.includes(node)
+                adjustedX >= 0 &&
+                adjustedX <= viewportRef.current.width &&
+                adjustedY >= 0 &&
+                adjustedY <= viewportRef.current.height &&
+                !interactionManager.activeNodes.includes(node) &&
+                !interactionManager.adjacentNodes.includes(node)
             ) {
-                // Draw adjacent nodes
+                // Draw the node
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
-                ctx.fillStyle = "#87CEEB"; // Lighter blue for adjacent nodes
+                ctx.arc(adjustedX, adjustedY, nodeSize, 0, Math.PI * 2);
+                ctx.fillStyle = "#3498db"; // Default node color
                 ctx.fill();
                 ctx.strokeStyle = "#2c3e50";
                 ctx.lineWidth = 2;
                 ctx.stroke();
+    
+                // Draw the node label
+                ctx.fillStyle = "#fff";
+                ctx.font = "12px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(node.label || node.id, adjustedX, adjustedY - nodeSize - 5);
             }
         });
-        // Draw all labels after the nodes
+    
+        // --- Draw adjacent nodes ---
         interactionManager.adjacentNodes.forEach((node) => {
-          if (
-              node.x >= viewport.x &&
-              node.x <= viewport.x + viewport.width &&
-              node.y >= viewport.y &&
-              node.y <= viewport.y + viewport.height &&
-              interactionManager.adjacentNodes.includes(node)
-          ) {
-              // Draw labels
-              ctx.fillStyle = "#fff";
-              ctx.font = "bold 12px Arial";
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              ctx.fillText(node.label || node.id, node.x, node.y - nodeSize - 5);
-          }
-        });
-
-        // Draw active nodes and labels
-        interactionManager.activeNodes.forEach((node) => {
+            const adjustedX = node.x - viewportRef.current.x;
+            const adjustedY = node.y - viewportRef.current.y;
+    
             if (
-                node.x >= viewport.x &&
-                node.x <= viewport.x + viewport.width &&
-                node.y >= viewport.y &&
-                node.y <= viewport.y + viewport.height &&
-                interactionManager.activeNodes.includes(node)
+                adjustedX >= 0 &&
+                adjustedX <= viewportRef.current.width &&
+                adjustedY >= 0 &&
+                adjustedY <= viewportRef.current.height
+            ) {
+                // Draw adjacent nodes
+                ctx.beginPath();
+                ctx.arc(adjustedX, adjustedY, nodeSize, 0, Math.PI * 2);
+                ctx.fillStyle = "#02e0bf"; // Lighter blue for adjacent nodes
+                ctx.fill();
+                ctx.strokeStyle = "#2c3e50";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+    
+                // Draw the label for adjacent nodes
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 12px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(node.label || node.id, adjustedX, adjustedY - nodeSize - 5);
+            }
+        });
+    
+        // --- Draw active nodes ---
+        interactionManager.activeNodes.forEach((node) => {
+            const adjustedX = node.x - viewportRef.current.x;
+            const adjustedY = node.y - viewportRef.current.y;
+    
+            if (
+                adjustedX >= 0 &&
+                adjustedX <= viewportRef.current.width &&
+                adjustedY >= 0 &&
+                adjustedY <= viewportRef.current.height
             ) {
                 // Draw active nodes
                 ctx.beginPath();
-                ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
+                ctx.arc(adjustedX, adjustedY, nodeSize, 0, Math.PI * 2);
                 ctx.fillStyle = "#ffffff"; // White for active nodes
                 ctx.fill();
                 ctx.strokeStyle = "#2c3e50";
                 ctx.lineWidth = 2;
                 ctx.stroke();
+    
+                // Draw the label for active nodes
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 12px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(node.label || node.id, adjustedX, adjustedY - nodeSize - 5);
             }
         });
-        interactionManager.activeNodes.forEach((node) => {
-          if (
-              node.x >= viewport.x &&
-              node.x <= viewport.x + viewport.width &&
-              node.y >= viewport.y &&
-              node.y <= viewport.y + viewport.height &&
-              interactionManager.activeNodes.includes(node)
-          ) {
-              // Draw labels
-              ctx.fillStyle = "#fff"; // Black text for active nodes
-              ctx.font = "bold 12px Arial";
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              ctx.fillText(node.label || node.id, node.x, node.y - nodeSize - 5);
-          }
-      });
-
+    
         ctx.restore();
     };
+    
 
     const updateCursorPosition = () => {
         interactionManager.updateCursorPosition(cursorPosition.current.x, cursorPosition.current.y);
@@ -168,33 +170,32 @@ const CanvasGraph = ({ nodes = [], edges = [], viewport, setViewport, expandedWi
     };
 
     const handleKeyDown = (e) => {
-      e.preventDefault();
-  
-      const scrollAmount = 20; // Amount to move the viewport
-      setViewport((prevViewport) => {
-          const newViewport = { ...prevViewport };
-  
-          switch (e.key) {
-              case "ArrowUp":
-                  newViewport.y = Math.max(0, prevViewport.y - scrollAmount) - 150;
-                  break;
-              case "ArrowDown":
-                  newViewport.y = Math.min(expandedHeight - viewport.height, prevViewport.y + scrollAmount) + 150;
-                  break;
-              case "ArrowLeft":
-                  newViewport.x = Math.max(0, prevViewport.x - scrollAmount) - 150;
-                  break;
-              case "ArrowRight":
-                  newViewport.x = Math.min(expandedWidth - viewport.width, prevViewport.x + scrollAmount) + 150;
-                  break;
-              default:
-                  return prevViewport; // No change for other keys
-          }
-  
-          return newViewport;
-      });
-  };
-  
+        e.preventDefault();
+
+        console.log("Key pressed:", e.key);
+        console.log("Old viewport:", viewportRef.current);
+
+        const scrollAmount = 20;
+        let newViewport = { ...viewportRef.current };
+
+        switch (e.key) {
+            case "ArrowUp":
+                newViewport.y = Math.max(0, newViewport.y - scrollAmount);
+                break;
+            case "ArrowDown":
+                newViewport.y = Math.min(expandedHeight - viewport.height, newViewport.y + scrollAmount);
+                break;
+            case "ArrowLeft":
+                newViewport.x = Math.max(0, newViewport.x - scrollAmount);
+                break;
+            case "ArrowRight":
+                newViewport.x = Math.min(expandedWidth - viewport.width, newViewport.x + scrollAmount);
+                break;
+        }
+
+        console.log("New viewport:", newViewport);
+        setViewport(newViewport);
+    };
 
     useEffect(() => {
         const updatedNodes = calculateNodePositions(
@@ -205,14 +206,15 @@ const CanvasGraph = ({ nodes = [], edges = [], viewport, setViewport, expandedWi
             500, // Pass the default number of iterations
             nodeSize // Pass the nodeSize argument
         );
-        if (updatedNodes.length !== 0){
-          positionedNodesRef.current = updatedNodes;
-          edgesRef.current = edges;
-          interactionManager.nodes = updatedNodes; // Sync nodes with the interaction manager
-          interactionManager.edges = edges; // Sync edges with the interaction manager
-          draw(); // Initial draw
+        if (updatedNodes.length !== 0) {
+            positionedNodesRef.current = updatedNodes;
+            edgesRef.current = edges;
+            interactionManager.nodes = updatedNodes; // Sync nodes with the interaction manager
+            interactionManager.edges = edges; // Sync edges with the interaction manager
+            draw(); // Initial draw
         }
     }, [nodes, edges, expandedWidth, expandedHeight]);
+
 
     useEffect(() => {
         draw(); // Trigger redraw on viewport change
@@ -245,4 +247,4 @@ const CanvasGraph = ({ nodes = [], edges = [], viewport, setViewport, expandedWi
     );
 };
 
-export default CanvasGraph;
+export default memo(CanvasGraph);

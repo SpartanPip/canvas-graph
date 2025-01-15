@@ -15,12 +15,6 @@ export const traverseFileTree = async (entry, setGraph) => {
     const tempNodes = [];
     const tempEdges = [];
 
-    // const addNode = (nodeName) => {
-    //     if (!tempNodes.some((node) => node.id === nodeName)) {
-    //         tempNodes.push({ id: nodeName, label: nodeName });
-    //     }
-    // };
-
     const addNode = (nodeName) => {
         // Check if nodeName is null or undefined
         if (!nodeName) {
